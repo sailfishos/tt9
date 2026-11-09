@@ -15,7 +15,6 @@ word lists for the locales named in dictionaries.list. The Sailfish OS keypad
 reads both from %{_datadir}/keypad. A layout is enough for the letters.
 Prediction needs the matching sqlite file.
 
-
 %package layouts
 Summary:    Keypad layouts from Traditional T9
 License:    Apache-2.0
@@ -23,6 +22,13 @@ License:    Apache-2.0
 %description layouts
 Keypad layouts from Traditional T9 for Sailfish OS.
 
+%package dictionary-ar-jo
+Summary:    Keypad dictionary for ar-JO from Traditional T9
+License:    ODC-BY
+Requires:   %{name}-layouts
+
+%description dictionary-ar-jo
+Word list for ar-JO from Traditional T9, for keypad prediction.
 
 %package dictionary-de-de
 Summary:    Keypad dictionary for de-DE from Traditional T9
@@ -32,7 +38,6 @@ Requires:   %{name}-layouts
 %description dictionary-de-de
 Word list for de-DE from Traditional T9, for keypad prediction.
 
-
 %package dictionary-en
 Summary:    Keypad dictionary for en from Traditional T9
 License:    GPL
@@ -41,6 +46,13 @@ Requires:   %{name}-layouts
 %description dictionary-en
 Word list for en from Traditional T9, for keypad prediction.
 
+%package dictionary-es-es
+Summary:    Keypad dictionary for es-ES from Traditional T9
+License:    ODC-BY
+Requires:   %{name}-layouts
+
+%description dictionary-es-es
+Word list for es-ES from Traditional T9, for keypad prediction.
 
 %package dictionary-fi-fi
 Summary:    Keypad dictionary for fi-FI from Traditional T9
@@ -50,6 +62,29 @@ Requires:   %{name}-layouts
 %description dictionary-fi-fi
 Word list for fi-FI from Traditional T9, for keypad prediction.
 
+%package dictionary-fr-fr
+Summary:    Keypad dictionary for fr-FR from Traditional T9
+License:    MIT and CC BY-SA 4.0 and MPL 2.0
+Requires:   %{name}-layouts
+
+%description dictionary-fr-fr
+Word list for fr-FR from Traditional T9, for keypad prediction.
+
+%package dictionary-hi-in
+Summary:    Keypad dictionary for hi-IN from Traditional T9
+License:    GPL
+Requires:   %{name}-layouts
+
+%description dictionary-hi-in
+Word list for hi-IN from Traditional T9, for keypad prediction.
+
+%package dictionary-zh-cn
+Summary:    Keypad dictionary for zh-CN from Traditional T9
+License:    CC BY 4.0
+Requires:   %{name}-layouts
+
+%description dictionary-zh-cn
+Word list for zh-CN from Traditional T9, for keypad prediction.
 
 %prep
 %autosetup -n %{name}-%{version}
@@ -67,6 +102,10 @@ cp -a tt9-data/. %{buildroot}%{_datadir}/keypad/
 %dir %{_datadir}/keypad
 %{_datadir}/keypad/*.layout
 
+%files dictionary-ar-jo
+%%license tt9-notices/ar-JO.txt tt9-notices/ar-JO.license
+%{_datadir}/keypad/ar-JO.sqlite
+
 %files dictionary-de-de
 %%license tt9-notices/de-DE.txt tt9-notices/de-DE.license
 %{_datadir}/keypad/de-DE.sqlite
@@ -75,6 +114,22 @@ cp -a tt9-data/. %{buildroot}%{_datadir}/keypad/
 %%license tt9-notices/en.txt tt9-notices/en.license
 %{_datadir}/keypad/en.sqlite
 
+%files dictionary-es-es
+%%license tt9-notices/es-ES.txt tt9-notices/es-ES.license
+%{_datadir}/keypad/es-ES.sqlite
+
 %files dictionary-fi-fi
 %%license tt9-notices/fi-FI.txt tt9-notices/fi-FI.license
 %{_datadir}/keypad/fi-FI.sqlite
+
+%files dictionary-fr-fr
+%%license tt9-notices/fr-FR.txt tt9-notices/fr-FR.license
+%{_datadir}/keypad/fr-FR.sqlite
+
+%files dictionary-hi-in
+%%license tt9-notices/hi-IN.txt tt9-notices/hi-IN.license
+%{_datadir}/keypad/hi-IN.sqlite
+
+%files dictionary-zh-cn
+%%license tt9-notices/zh-CN.txt tt9-notices/zh-CN.license
+%{_datadir}/keypad/zh-CN.sqlite
