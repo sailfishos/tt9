@@ -2,7 +2,7 @@ Name:       tt9
 Summary:    Keypad layouts and predictive dictionaries for Sailfish OS
 Version:    1.0
 Release:    1
-License:    Apache-2.0 and MIT and BSD-3-Clause and GPL-2.0-or-later and GPL-3.0-only and LGPL-2.1-or-later and LGPL-3.0-only and AGPL-3.0-only and MPL-2.0 and CC0-1.0 and CC-BY-3.0 and CC-BY-4.0 and CC-BY-SA-4.0 and ODbL-1.0 and LicenseRef-Database-Contents and LicenseRef-GFDL-Unverified and LicenseRef-Public-Domain and LicenseRef-Unresolved
+License:    Apache-2.0 and MIT and BSD-3-Clause and GPL-2.0-or-later and GPL-2.0-only and GPL-3.0-only and LGPL-2.1-or-later and LGPL-2.1-only and LGPL-3.0-only and AGPL-3.0-only and MPL-1.1 and MPL-2.0 and CC0-1.0 and CC-BY-3.0 and CC-BY-4.0 and CC-BY-SA-4.0 and ODbL-1.0 and LicenseRef-CLARIN-PUB-BY and LicenseRef-Database-Contents and LicenseRef-GFDL-Unverified and LicenseRef-Public-Domain and LicenseRef-Unresolved
 BuildArch:  noarch
 URL:        https://github.com/sailfishos/tt9
 Source0:    %{name}-%{version}.tar.bz2
@@ -78,6 +78,30 @@ Requires:   %{name}-layouts
 %description dictionary-hi-in
 Word list for hi-IN from Traditional T9, for keypad prediction.
 
+%package dictionary-it-it
+Summary:    Keypad dictionary for it-IT from LibreOffice
+License:    GPL-3.0-only
+Requires:   %{name}-layouts
+
+%description dictionary-it-it
+Word list for it-IT from the LibreOffice it_IT dictionary, for keypad prediction.
+
+%package dictionary-nb-no
+Summary:    Keypad dictionary for nb-NO from LibreOffice
+License:    GPL-2.0-only and CC-BY-4.0 and LicenseRef-CLARIN-PUB-BY
+Requires:   %{name}-layouts
+
+%description dictionary-nb-no
+Word list for nb-NO from the LibreOffice Norwegian dictionary, for keypad prediction.
+
+%package dictionary-pt-pt
+Summary:    Keypad dictionary for pt-PT from LibreOffice
+License:    GPL-2.0-only OR LGPL-2.1-only OR MPL-1.1
+Requires:   %{name}-layouts
+
+%description dictionary-pt-pt
+Word list for pt-PT from the LibreOffice pt_PT dictionary, for keypad prediction.
+
 %package dictionary-zh-cn
 Summary:    Keypad dictionary for zh-CN from Traditional T9
 License:    CC BY 4.0
@@ -129,6 +153,18 @@ cp -a tt9-data/. %{buildroot}%{_datadir}/keypad/
 %files dictionary-hi-in
 %%license tt9-notices/hi-IN.txt tt9-notices/hi-IN.license
 %{_datadir}/keypad/hi-IN.sqlite
+
+%files dictionary-it-it
+%%license tt9-notices/it-IT.txt tt9-notices/it-IT.license
+%{_datadir}/keypad/it-IT.sqlite
+
+%files dictionary-nb-no
+%%license tt9-notices/nb-NO.txt tt9-notices/nb-NO.license
+%{_datadir}/keypad/nb-NO.sqlite
+
+%files dictionary-pt-pt
+%%license tt9-notices/pt-PT.txt tt9-notices/pt-PT.license
+%{_datadir}/keypad/pt-PT.sqlite
 
 %files dictionary-zh-cn
 %%license tt9-notices/zh-CN.txt tt9-notices/zh-CN.license
