@@ -26,6 +26,7 @@ HUNSPELL = HERE / "libreoffice-dictionaries"
 # notice: files under that folder, joined into the full notice.
 # license: file with the license text, or None to cut it out of the first
 #   notice file, the readme.
+# name: base name of the .dic and .aff files, when it is not the folder name.
 # clitic_flags: affix flags that mix plain endings with pronoun-attached forms.
 #   Only their rules adding a plain ending (PLAIN_ENDINGS) are used.
 HUNSPELL_SOURCES = {
@@ -35,6 +36,13 @@ HUNSPELL_SOURCES = {
         "license": None,
         # Verb forms with attached pronouns, e.g. "identificatecela".
         "clitic_flags": set("IDEKLhMbjmcvla"),
+    },
+    "nb-NO": {
+        "directory": "no",
+        "name": "nb_NO",
+        "notice": ("README_NO.txt", "COPYING"),
+        "license": "COPYING",
+        "clitic_flags": set(),
     },
     "pt-PT": {
         "directory": "pt_PT",
@@ -277,10 +285,9 @@ def apply_affix(kind, word, strip, add, matcher):
     return add + word[len(strip):]
 
 
-def expand_hunspell(directory, clitic_flags):
+def expand_hunspell(directory, name, clitic_flags):
     # Stems with the flags from the .dic, plus the forms those flags allow.
     # Forms an affix flag adds again (continuation flags) are not followed.
-    name = directory.name
     affixes = read_affixes(directory / ("%s.aff" % name), clitic_flags)
     forms = set()
     lines = read_hunspell_text(directory / ("%s.dic" % name)).splitlines()
@@ -289,7 +296,7 @@ def expand_hunspell(directory, clitic_flags):
             continue
         entry = raw.split("\t", 1)[0].split(" ", 1)[0]
         word, _sep, flags = entry.partition("/")
-        if not any(char.isalpha() for char in word) or "'" in word or "-" in word:
+        if not any(char.isalpha() for char in word) or "'" in word or "-" in word or "." in word:
             continue
         forms.add(word)
         cross_prefixes = []
@@ -319,7 +326,11 @@ def expand_hunspell(directory, clitic_flags):
 
 def collect_hunspell_words(locale, mapping):
     source = HUNSPELL_SOURCES[locale]
-    forms = expand_hunspell(HUNSPELL / source["directory"], source["clitic_flags"])
+    forms = expand_hunspell(
+        HUNSPELL / source["directory"],
+        source.get("name", source["directory"]),
+        source["clitic_flags"],
+    )
     best = {}
     skipped = 0
     for word in sorted(forms):
