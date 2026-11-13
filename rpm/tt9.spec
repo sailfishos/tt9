@@ -78,6 +78,14 @@ Requires:   %{name}-layouts
 %description dictionary-hi-in
 Word list for hi-IN from Traditional T9, for keypad prediction.
 
+%package dictionary-nb-no
+Summary:    Keypad dictionary for nb-NO from Traditional T9
+License:    GPL-3.0-only and CC-BY-4.0 and CC-BY-SA-4.0
+Requires:   %{name}-layouts
+
+%description dictionary-nb-no
+Word list for nb-NO from Traditional T9, for keypad prediction.
+
 %package dictionary-zh-cn
 Summary:    Keypad dictionary for zh-CN from Traditional T9
 License:    CC BY 4.0
@@ -129,6 +137,10 @@ cp -a tt9-data/. %{buildroot}%{_datadir}/keypad/
 %files dictionary-hi-in
 %%license tt9-notices/hi-IN.txt tt9-notices/hi-IN.license
 %{_datadir}/keypad/hi-IN.sqlite
+
+%files dictionary-nb-no
+%%license tt9-notices/nb-NO.txt tt9-notices/nb-NO.license
+%{_datadir}/keypad/nb-NO.sqlite
 
 %files dictionary-zh-cn
 %%license tt9-notices/zh-CN.txt tt9-notices/zh-CN.license
