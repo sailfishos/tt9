@@ -1,3 +1,6 @@
 [submodule "tt9"]
 	path = tt9
 	url = git@github.com:sspanak/tt9.git
+[submodule "libreoffice-dictionaries"]
+	path = libreoffice-dictionaries
+	url = https://github.com/LibreOffice/dictionaries.git

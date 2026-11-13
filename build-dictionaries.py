@@ -17,6 +17,39 @@ HERE = Path(__file__).resolve().parent
 DEFINITIONS = HERE / "tt9" / "app" / "languages" / "definitions"
 DICTIONARIES = HERE / "tt9" / "app" / "languages" / "dictionaries"
 READMES = HERE / "tt9" / "docs" / "dictionaries"
+HUNSPELL = HERE / "libreoffice-dictionaries"
+
+# Locales whose word list is a LibreOffice hunspell dictionary instead of the
+# CSV named in the layout. The Traditional T9 CSVs for these languages carry a
+# non-commercial licence and must not be used.
+# directory: folder in the LibreOffice dictionaries checkout.
+# notice: files under that folder, joined into the full notice.
+# license: file with the license text, or None to cut it out of the first
+#   notice file, the readme.
+# clitic_flags: affix flags that mix plain endings with pronoun-attached forms.
+#   Only their rules adding a plain ending (PLAIN_ENDINGS) are used.
+HUNSPELL_SOURCES = {
+    "it-IT": {
+        "directory": "it_IT",
+        "notice": ("README_it_IT.txt", "legacy/it_IT_license.txt"),
+        "license": None,
+        # Verb forms with attached pronouns, e.g. "identificatecela".
+        "clitic_flags": set("IDEKLhMbjmcvla"),
+    },
+    "pt-PT": {
+        "directory": "pt_PT",
+        "notice": ("README_pt_PT.txt", "LICENSES.txt"),
+        "license": "LICENSES.txt",
+        "clitic_flags": set(),
+    },
+}
+
+# What a clitic flag may still add: the plain gender and number endings.
+PLAIN_ENDINGS = {"", "a", "e", "i", "o", "he", "hi"}
+
+# A hunspell dictionary expands to far more forms than people type. Stop the
+# build if a list ever grows past this, so a wrong flag set is noticed.
+HUNSPELL_MAX_WORDS = 1500000
 
 # A package build must produce these even when the list grows.
 REQUIRED_LOCALES = ("en", "de-DE", "fi-FI")
@@ -189,6 +222,119 @@ def collect_words(csv_path, mapping, sounds):
     return best, skipped
 
 
+def read_hunspell_text(path):
+    # The Portuguese files are not all UTF-8.
+    data = path.read_bytes()
+    try:
+        return data.decode("utf-8")
+    except UnicodeDecodeError:
+        return data.decode("latin-1")
+
+
+def read_affixes(path, clitic_flags):
+    # kind -> flag -> (cross product, [(strip, add, condition regex)])
+    affixes = {"PFX": {}, "SFX": {}}
+    for raw in read_hunspell_text(path).splitlines():
+        parts = raw.split("#", 1)[0].split()
+        if len(parts) < 4 or parts[0] not in affixes:
+            continue
+        kind, flag = parts[0], parts[1]
+        if parts[2] in ("Y", "N") and len(parts) == 4:
+            affixes[kind][flag] = (parts[2] == "Y", [])
+            continue
+        if flag not in affixes[kind] or len(parts) < 5:
+            continue
+        strip = "" if parts[2] == "0" else parts[2]
+        add = "" if parts[3] == "0" else parts[3].split("/", 1)[0]
+        # Apostrophes and hyphens build elisions and pronoun forms, which are
+        # typed as separate words on the keypad.
+        if "'" in add or "-" in add:
+            continue
+        if flag in clitic_flags and add not in PLAIN_ENDINGS:
+            continue
+        condition = parts[4]
+        if condition == ".":
+            pattern = ""
+        else:
+            pattern = "^" + condition if kind == "PFX" else condition + "$"
+        try:
+            matcher = re.compile(pattern)
+        except re.error:
+            continue
+        affixes[kind][flag][1].append((strip, add, matcher))
+    return affixes
+
+
+def apply_affix(kind, word, strip, add, matcher):
+    if matcher.pattern and not matcher.search(word):
+        return None
+    if kind == "SFX":
+        if strip and not word.endswith(strip):
+            return None
+        return word[: len(word) - len(strip)] + add
+    if strip and not word.startswith(strip):
+        return None
+    return add + word[len(strip):]
+
+
+def expand_hunspell(directory, clitic_flags):
+    # Stems with the flags from the .dic, plus the forms those flags allow.
+    # Forms an affix flag adds again (continuation flags) are not followed.
+    name = directory.name
+    affixes = read_affixes(directory / ("%s.aff" % name), clitic_flags)
+    forms = set()
+    lines = read_hunspell_text(directory / ("%s.dic" % name)).splitlines()
+    for raw in lines[1:]:
+        if not raw or raw[0] in "#/\t ":
+            continue
+        entry = raw.split("\t", 1)[0].split(" ", 1)[0]
+        word, _sep, flags = entry.partition("/")
+        if not any(char.isalpha() for char in word) or "'" in word or "-" in word:
+            continue
+        forms.add(word)
+        cross_prefixes = []
+        cross_suffixes = []
+        for flag in flags:
+            for kind in ("PFX", "SFX"):
+                if flag not in affixes[kind]:
+                    continue
+                cross, rules = affixes[kind][flag]
+                for strip, add, matcher in rules:
+                    form = apply_affix(kind, word, strip, add, matcher)
+                    if not form:
+                        continue
+                    forms.add(form)
+                    if cross and kind == "SFX":
+                        cross_suffixes.append(form)
+                    elif cross:
+                        cross_prefixes.append((strip, add, matcher))
+        # Cross product: each prefix also goes onto each suffixed form.
+        for suffix_form in cross_suffixes:
+            for strip, add, matcher in cross_prefixes:
+                form = apply_affix("PFX", suffix_form, strip, add, matcher)
+                if form:
+                    forms.add(form)
+    return forms
+
+
+def collect_hunspell_words(locale, mapping):
+    source = HUNSPELL_SOURCES[locale]
+    forms = expand_hunspell(HUNSPELL / source["directory"], source["clitic_flags"])
+    best = {}
+    skipped = 0
+    for word in sorted(forms):
+        sequence = digit_sequence(word, mapping)
+        if sequence is None:
+            skipped += 1
+            continue
+        # No usage counts here. Ordinary lowercase words go before names and
+        # acronyms, which would otherwise sort first as capitals.
+        best[(sequence, word)] = 0 if any(char.isupper() for char in word) else 1
+    if len(best) > HUNSPELL_MAX_WORDS:
+        raise SystemExit("%s: %d words from the hunspell dictionary, more than %d" % (locale, len(best), HUNSPELL_MAX_WORDS))
+    return best, skipped
+
+
 def escape_layout(chars):
     # One line per key. Newline and backslash are written escaped and undone
     # by T9Dictionary when it reads the file.
@@ -280,7 +426,28 @@ def extract_license(text):
     return text.strip() + "\n"
 
 
+def write_hunspell_notice(notices, locale):
+    source = HUNSPELL_SOURCES[locale]
+    directory = HUNSPELL / source["directory"]
+    texts = []
+    for name in source["notice"]:
+        text = read_hunspell_text(directory / name)
+        texts.append(text if text.endswith("\n") else text + "\n")
+    license_name = source["license"]
+    if license_name:
+        license_text = read_hunspell_text(directory / license_name)
+    else:
+        license_text = extract_license(texts[0])
+    doc = notices / ("%s.txt" % locale)
+    license_path = notices / ("%s.license" % locale)
+    doc.write_text("\n".join(texts), encoding="utf-8")
+    license_path.write_text(license_text if license_text.endswith("\n") else license_text + "\n", encoding="utf-8")
+    return doc.name, license_path.name
+
+
 def write_notice(notices, locale, dictionary):
+    if locale in HUNSPELL_SOURCES:
+        return write_hunspell_notice(notices, locale)
     readme = find_readme(dictionary)
     if readme is None:
         print("notice %s: no word-list readme for %s" % (locale, dictionary), file=sys.stderr)
@@ -303,14 +470,22 @@ def build_layout(definition, output):
 
 
 def build_word_list(locale, dictionary, keys, sounds, output):
-    if not dictionary:
-        print("skip %s dictionary: no dictionary file" % locale, file=sys.stderr)
-        return False
-    csv_path = DICTIONARIES / dictionary
-    if not csv_path.is_file():
-        print("skip %s dictionary: missing %s" % (locale, csv_path), file=sys.stderr)
-        return False
-    words, skipped = collect_words(csv_path, load_mapping(keys), sounds)
+    mapping = load_mapping(keys)
+    if locale in HUNSPELL_SOURCES:
+        source_dir = HUNSPELL / HUNSPELL_SOURCES[locale]["directory"]
+        if not source_dir.is_dir():
+            print("skip %s dictionary: missing %s" % (locale, source_dir), file=sys.stderr)
+            return False
+        words, skipped = collect_hunspell_words(locale, mapping)
+    else:
+        if not dictionary:
+            print("skip %s dictionary: no dictionary file" % locale, file=sys.stderr)
+            return False
+        csv_path = DICTIONARIES / dictionary
+        if not csv_path.is_file():
+            print("skip %s dictionary: missing %s" % (locale, csv_path), file=sys.stderr)
+            return False
+        words, skipped = collect_words(csv_path, mapping, sounds)
     if not words:
         print("skip %s dictionary: no words mapped" % locale, file=sys.stderr)
         return False
