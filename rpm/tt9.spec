@@ -125,6 +125,16 @@ cp -a tt9-data/. %{buildroot}%{_datadir}/keypad/
 %license tt9/LICENSE.txt
 %dir %{_datadir}/keypad
 %{_datadir}/keypad/*.layout
+# needs dictionary, zh-CN layout included in dictionary package
+%exclude %{_datadir}/keypad/zh-??.layout
+# no font for these in sailfish yet
+%exclude %{_datadir}/keypad/zgh-??.layout
+# same as base english, can include in dictionary subpackage if such is created
+%exclude %{_datadir}/keypad/en-IN.layout
+# artificial 'toki pona' language, layout is basic a-z ascii so maybe not much point without dictionary
+%exclude %{_datadir}/keypad/tp-TP.layout
+# need dictionary
+%exclude %{_datadir}/keypad/ja-JP.layout
 
 %files dictionary-ar-jo
 %%license tt9-notices/ar-JO.txt tt9-notices/ar-JO.license
@@ -168,4 +178,5 @@ cp -a tt9-data/. %{buildroot}%{_datadir}/keypad/
 
 %files dictionary-zh-cn
 %%license tt9-notices/zh-CN.txt tt9-notices/zh-CN.license
+%{_datadir}/keypad/zh-CN.layout
 %{_datadir}/keypad/zh-CN.sqlite
